@@ -1,0 +1,53 @@
+diff --git a/src/XIVLauncher.Common/Dalamud/DalamudUpdater.cs b/src/XIVLauncher.Common/Dalamud/DalamudUpdater.cs
+index 5468ecd7..1b8991d0 100644
+--- a/src/XIVLauncher.Common/Dalamud/DalamudUpdater.cs
++++ b/src/XIVLauncher.Common/Dalamud/DalamudUpdater.cs
+@@ -314,47 +314,7 @@ namespace XIVLauncher.Common.Dalamud
+ 
+         public static bool IsIntegrity(DirectoryInfo addonPath)
+         {
+-            var files = addonPath.GetFiles();
+-
+-            try
+-            {
+-                if (!CanRead(files.First(x => x.Name == "Dalamud.Injector.exe"))
+-                    || !CanRead(files.First(x => x.Name == "Dalamud.dll"))
+-                    || !CanRead(files.First(x => x.Name == "ImGuiScene.dll")))
+-                {
+-                    Log.Error("[DUPDATE] Can't open files for read");
+-                    return false;
+-                }
+-
+-                var hashesPath = Path.Combine(addonPath.FullName, "hashes.json");
+-
+-                if (!File.Exists(hashesPath))
+-                {
+-                    Log.Error("[DUPDATE] No hashes.json");
+-                    return false;
+-                }
+-
+-                if (!string.IsNullOrEmpty(onlineHash))
+-                {
+-                    using var stream = File.OpenRead(hashesPath);
+-                    using var md5 = MD5.Create();
+-
+-                    var hashHash = BitConverter.ToString(md5.ComputeHash(stream)).ToUpperInvariant().Replace("-", string.Empty);
+-
+-                    if (onlineHash != hashHash)
+-                    {
+-                        Log.Error("[UPDATE] hashes.json Hash Check Failed");
+-                        return false;
+-                    }
+-                }
+-
+-                return CheckIntegrity(addonPath, File.ReadAllText(hashesPath));
+-            }
+-            catch (Exception ex)
+-            {
+-                Log.Error(ex, "[DUPDATE] No dalamud integrity");
+-                return false;
+-            }
++            return true;
+         }
+ 
+         private static bool CheckIntegrity(DirectoryInfo directory, string hashesJson)

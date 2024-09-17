@@ -1,0 +1,114 @@
+name: Apply Patches and Build
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  DALAMUD_VERSION: 9.1.0.12
+  DALAMUD_HASH: ba30c5d95632a6ec42f0fcfe5f3c6a9b22567687
+  LAUNCHER_VERSION: 6.3.14-beta9
+  UPDATER_VERSION: master
+jobs:
+  build:
+    name: Build on Windows
+    runs-on: windows-2022
+    steps:
+      - name: Set global git user
+        run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+      - name: Checkout patches
+        uses: actions/checkout@v4
+      - name: Checkout Dalamud
+        uses: actions/checkout@v4
+        with:
+          repository: 'ottercorp/Dalamud'
+          path: '.\Dalamud'
+          submodules: recursive
+          fetch-depth: 0
+      - name: Checkout Launcher
+        uses: actions/checkout@v4
+        with:
+          repository: 'ottercorp/FFXIVQuickLauncher'
+          path: '.\FFXIVQuickLauncher'
+          submodules: recursive
+          fetch-depth: 0
+      - name: Checkout Updater
+        uses: actions/checkout@v4
+        with:
+          repository: 'ottercorp/Dalamud.Updater'
+          path: '.\Dalamud.Updater'
+          submodules: recursive
+          fetch-depth: 0
+      - name: Apply Dalamud Patches
+        working-directory: .\Dalamud
+        run: |
+          git checkout -b patched $Env:DALAMUD_HASH
+          Get-ChildItem $Env:GITHUB_WORKSPACE\patches\Dalamud\*.cherry | % {$_.FullName} | % { Get-Content $_ } | git cherry-pick -X theirs --stdin
+          Get-ChildItem $Env:GITHUB_WORKSPACE\patches\Dalamud\*.patch | % {$_.FullName} | % { Get-Content $_ } | git apply --whitespace=fix
+          git log --oneline -n 5
+          git diff --name-status
+      - name: Apply Launcher Patches
+        working-directory: .\FFXIVQuickLauncher
+        run: |
+          git checkout -b patched $Env:LAUNCHER_VERSION
+          Get-ChildItem $Env:GITHUB_WORKSPACE\patches\FFXIVQuickLauncher\*.cherry | % {$_.FullName} | % { Get-Content $_ } | git cherry-pick -X theirs --stdin
+          Get-ChildItem $Env:GITHUB_WORKSPACE\patches\FFXIVQuickLauncher\*.patch | % {$_.FullName} | % { Get-Content $_ } | git apply --whitespace=fix
+          git log --oneline -n 5
+          git diff --name-status
+      - name: Apply Updater Patches
+        working-directory: .\Dalamud.Updater
+        run: |
+          git checkout -b patched $Env:UPDATER_VERSION
+          Get-ChildItem $Env:GITHUB_WORKSPACE\patches\Dalamud.Updater\*.cherry | % {$_.FullName} | % { Get-Content $_ } | git cherry-pick -X theirs --stdin
+          Get-ChildItem $Env:GITHUB_WORKSPACE\patches\Dalamud.Updater\*.patch | % {$_.FullName} | % { Get-Content $_ } | git apply --whitespace=fix
+          git log --oneline -n 5
+          git diff --name-status
+      - name: (Dalamud) Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.0.2
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.100'
+      - name: (Dalamud) Build Dalamud Core
+        working-directory: .\Dalamud
+        run: .\build.ps1 CompileDalamud
+      - name: (FFXIVQuickLauncher) Restore Nuget Packages
+        working-directory: .\FFXIVQuickLauncher
+        run: |
+          cd .\src\
+          dotnet restore
+          cd ..
+      - name: (FFXIVQuickLauncher) Build DotNet4 Master
+        run: |
+          cd "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\"
+            .\MSBuild.exe $Env:GITHUB_WORKSPACE\FFXIVQuickLauncher\src\XIVLauncher.sln /t:Build /p:Configuration=ReleaseNoUpdate
+      - name: (Dalamud.Updater) Restore Nuget Packages
+        working-directory: .\Dalamud.Updater
+        run: |
+          dotnet restore
+      - name: (Dalamud.Updater) Build DotNet4 Master
+        run: |
+          cd "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\"
+            .\MSBuild.exe $Env:GITHUB_WORKSPACE\Dalamud.Updater\Dalamud.Updater.sln /t:Build /p:Configuration=Release
+      - name: Arrange files
+        run: |
+          mkdir dist | cd
+          mkdir XIVLauncherCN | cd
+          mkdir app-$Env:LAUNCHER_VERSION
+          cp $Env:GITHUB_WORKSPACE\FFXIVQuickLauncher\src\bin\XIVLauncher.Common.dll .\app-$Env:LAUNCHER_VERSION\
+          mkdir Roaming | cd
+          mkdir addon | cd
+          mkdir Hooks | cd
+          mkdir $Env:DALAMUD_VERSION
+          cp $Env:GITHUB_WORKSPACE\Dalamud\bin\Release\Dalamud.dll .\$Env:DALAMUD_VERSION\
+          cd $Env:GITHUB_WORKSPACE\dist\
+          mkdir Dalamud.Updater | cd
+          cp $Env:GITHUB_WORKSPACE\Dalamud.Updater\Dalamud.Updater\bin\Release\net48\Dalamud.Updater.exe .
+          mkdir XIVLauncher | cd
+          mkdir addon | cd
+          mkdir Hooks | cd
+          mkdir $Env:DALAMUD_VERSION
+          cp $Env:GITHUB_WORKSPACE\Dalamud\bin\Release\Dalamud.dll .\$Env:DALAMUD_VERSION\
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-artifact
+          path: .\dist\

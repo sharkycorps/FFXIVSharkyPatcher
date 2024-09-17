@@ -1,0 +1,276 @@
+diff --git a/Dalamud/Game/ChatHandlers.cs b/Dalamud/Game/ChatHandlers.cs
+index 53728580..cc3f61d7 100644
+--- a/Dalamud/Game/ChatHandlers.cs
++++ b/Dalamud/Game/ChatHandlers.cs
+@@ -293,25 +293,6 @@ internal class ChatHandlers : IServiceType
+ 
+         this.hasSeenLoadingMsg = true;
+ 
+-        Task.Run(() =>
+-        {
+-            try
+-            {
+-                Util.GetRemoteTOSHash().ContinueWith(task =>
+-                {
+-                    var remoteHash = task.Result;
+-                    if (string.IsNullOrEmpty(this.configuration.AcceptedTOSHash) || remoteHash != this.configuration.AcceptedTOSHash)
+-                    {
+-                        dalamudInterface.OpenToSWindow();
+-                    }
+-                });
+-            }
+-            catch (Exception ex)
+-            {
+-                Log.Error(ex, "Remote TOS hash check failed");
+-            }
+-        });
+-
+     }
+ 
+     private void AutoUpdatePluginsWithRetry()
+diff --git a/Dalamud/Interface/Internal/DalamudInterface.cs b/Dalamud/Interface/Internal/DalamudInterface.cs
+index b2f9bda9..834bd986 100644
+--- a/Dalamud/Interface/Internal/DalamudInterface.cs
++++ b/Dalamud/Interface/Internal/DalamudInterface.cs
+@@ -71,7 +71,6 @@ internal class DalamudInterface : IInternalDisposableService
+     private readonly ProfilerWindow profilerWindow;
+     private readonly BranchSwitcherWindow branchSwitcherWindow;
+     private readonly HitchSettingsWindow hitchSettingsWindow;
+-    private readonly ToSWindow tosWindow;
+ 
+     private bool isCreditsDarkening = false;
+     private OutCubic creditsDarkeningAnimation = new(TimeSpan.FromSeconds(10));
+@@ -135,7 +134,6 @@ internal class DalamudInterface : IInternalDisposableService
+         this.profilerWindow = new ProfilerWindow() { IsOpen = false };
+         this.branchSwitcherWindow = new BranchSwitcherWindow() { IsOpen = false };
+         this.hitchSettingsWindow = new HitchSettingsWindow() { IsOpen = false };
+-        this.tosWindow = new ToSWindow() { IsOpen = false };
+ 
+         this.WindowSystem.AddWindow(this.changelogWindow);
+         this.WindowSystem.AddWindow(this.colorDemoWindow);
+@@ -152,7 +150,6 @@ internal class DalamudInterface : IInternalDisposableService
+         this.WindowSystem.AddWindow(this.profilerWindow);
+         this.WindowSystem.AddWindow(this.branchSwitcherWindow);
+         this.WindowSystem.AddWindow(this.hitchSettingsWindow);
+-        this.WindowSystem.AddWindow(this.tosWindow);
+ 
+         ImGuiManagedAsserts.AssertsEnabled = configuration.AssertsEnabledAtStartup;
+         this.isImGuiDrawDevMenu = this.isImGuiDrawDevMenu || configuration.DevBarOpenAtStartup;
+@@ -223,7 +220,6 @@ internal class DalamudInterface : IInternalDisposableService
+         this.consoleWindow.Dispose();
+         this.pluginWindow.Dispose();
+         this.titleScreenMenuWindow.Dispose();
+-        this.tosWindow.Dispose();
+     }
+ 
+     #region Open
+@@ -357,11 +353,6 @@ internal class DalamudInterface : IInternalDisposableService
+         this.branchSwitcherWindow.BringToFront();
+     }
+ 
+-    /// <summary>
+-    /// Opens the <see cref="ToSWindow"/>.
+-    /// </summary>
+-    public void OpenToSWindow() => this.tosWindow.IsOpen = true;
+-
+     #endregion
+ 
+     #region Close
+@@ -720,11 +711,6 @@ internal class DalamudInterface : IInternalDisposableService
+                         this.OpenHitchSettings();
+                     }
+ 
+-                    if (ImGui.MenuItem("Open TOS window"))
+-                    {
+-                        this.OpenToSWindow();
+-                    }
+-
+                     ImGui.Separator();
+ 
+                     if (ImGui.MenuItem("Unload Dalamud"))
+diff --git a/Dalamud/Interface/Internal/Windows/ToSWindow.cs b/Dalamud/Interface/Internal/Windows/ToSWindow.cs
+deleted file mode 100644
+index 639ff50d..00000000
+--- a/Dalamud/Interface/Internal/Windows/ToSWindow.cs
++++ /dev/null
+@@ -1,153 +0,0 @@
+-using System;
+-using System.Diagnostics;
+-using System.IO;
+-using System.Net.Http;
+-using System.Numerics;
+-using System.Threading;
+-using System.Threading.Tasks;
+-using Dalamud.Configuration.Internal;
+-using Dalamud.Interface.Colors;
+-using Dalamud.Interface.Windowing;
+-using Dalamud.Utility;
+-using Dalamud.Networking.Http;
+-using ImGuiNET;
+-using ImGuiScene;
+-using Lumina.Excel.GeneratedSheets;
+-using Newtonsoft.Json;
+-using Serilog;
+-
+-namespace Dalamud.Interface.Internal.Windows;
+-
+-/// <summary>
+-/// For major updates, an in-game Changelog window.
+-/// </summary>
+-internal sealed class ToSWindow : Window, IDisposable
+-{
+-    private static SemaphoreSlim requestSemaphore = new SemaphoreSlim(1, 1);
+-    private string? TOSContent;
+-    private bool tosRead = false;
+-    private bool tosRequested = false;
+-    private DalamudConfiguration configuration;
+-    /// <summary>
+-    /// Initializes a new instance of the <see cref="ChangelogWindow"/> class.
+-    /// </summary>
+-    public ToSWindow()
+-        : base("Dalamud Terms of Service", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse)
+-    {
+-        this.Namespace = "DalamudTosWindow";
+-
+-        this.Size = new Vector2(885, 463);
+-        this.SizeCondition = ImGuiCond.Appearing;
+-        this.ShowCloseButton = false;
+-        this.configuration = Service<DalamudConfiguration>.Get();
+-    }
+-
+-    /// <inheritdoc/>
+-    public override void Draw()
+-    {
+-        var isOpen = this.IsOpen;
+-        if (!isOpen)
+-        {
+-            return;
+-        }
+-
+-        if (!this.tosRequested)
+-        {
+-            this.GetRemoteTOS();
+-        }
+-
+-        this.BringToFront();
+-
+-        var center = ImGui.GetMainViewport().GetCenter();
+-        ImGui.SetWindowPos(new Vector2(center.X - (this.Size.Value.X / 2.0f), center.Y - (this.Size.Value.Y / 2.0f)));
+-
+-        var tosContent = this.TOSContent == null ? "请等待获取用户协议..." : this.TOSContent;
+-        ImGui.PushTextWrapPos(850);
+-        ImGui.TextUnformatted(tosContent);
+-        ImGui.PopTextWrapPos();
+-
+-        ImGui.Spacing();
+-
+-        if (this.TOSContent == null)
+-        {
+-            ImGui.BeginDisabled();
+-        }
+-
+-        ImGui.Checkbox("我已阅读完毕以上内容并同意", ref this.tosRead);
+-
+-        if (this.TOSContent == null)
+-        {
+-            ImGui.EndDisabled();
+-        }
+-
+-        if (!this.tosRead)
+-        {
+-            ImGui.BeginDisabled();
+-        }
+-
+-        if (ImGui.Button("我同意"))
+-        {
+-            Log.Debug(tosContent);
+-            var readHash = Hash.GetStringSha256Hash(tosContent);
+-            Log.Information($"TOS Read Hash: {readHash}");
+-            this.configuration.AcceptedTOSHash = readHash;
+-            this.configuration.QueueSave();
+-            this.IsOpen = false;
+-        }
+-
+-        if (!this.tosRead)
+-        {
+-            ImGui.EndDisabled();
+-        }
+-
+-        ImGui.SameLine();
+-        var disagreeText = "我不同意";
+-        ImGui.SetCursorPosX(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(disagreeText).X);
+-
+-        if (ImGui.Button(disagreeText))
+-        {
+-            Log.Information($"TOS failed to get accepted.");
+-            this.configuration.AcceptedTOSHash = string.Empty;
+-            this.configuration.QueueSave();
+-            this.IsOpen = false;
+-            Task.Run(() =>
+-            {
+-                Thread.Sleep(1000);
+-                Service<Dalamud>.Get().Unload();
+-            });
+-        }
+-    }
+-
+-    /// <summary>
+-    /// Dispose this window.
+-    /// </summary>
+-    public void Dispose()
+-    {
+-    }
+-
+-    internal async void GetRemoteTOS()
+-    {
+-        if (this.tosRequested && this.TOSContent != null)
+-        {
+-            return;
+-        }
+-
+-        this.tosRequested = true;
+-        await requestSemaphore.WaitAsync();
+-        try
+-        {
+-            Log.Information("Requesting TOS...");
+-            var httpClient = Service<HappyHttpClient>.Get().SharedHttpClient;
+-            var response = await httpClient.GetStringAsync($"{Util.TOSRemoteUrl}");
+-            this.TOSContent = response;
+-        }
+-        catch (Exception ex)
+-        {
+-            Log.Error(ex, "Remote TOS request failed");
+-        }
+-        finally
+-        {
+-            requestSemaphore.Release();
+-        }
+-    }
+-}
+diff --git a/Dalamud/Utility/Util.cs b/Dalamud/Utility/Util.cs
+index 6b9786c1..592fb839 100644
+--- a/Dalamud/Utility/Util.cs
++++ b/Dalamud/Utility/Util.cs
+@@ -39,7 +39,6 @@ namespace Dalamud.Utility;
+ /// </summary>
+ public static class Util
+ {
+-    internal static string TOSRemoteUrl = "https://aonyx.ffxiv.wang/Dalamud/ToS";
+ 
+     private static readonly Type GenericSpanType = typeof(Span<>);
+     private static string? gitHashInternal;
+@@ -1057,14 +1056,6 @@ public static class Util
+         ImGui.PopStyleVar();
+     }
+ 
+-    internal static async Task<string> GetRemoteTOSHash()
+-    {
+-        var httpClient = Service<HappyHttpClient>.Get().SharedHttpClient;
+-        var response = await httpClient.GetStringAsync($"{TOSRemoteUrl}?tosHash=true");
+-        var tosResponse = JsonConvert.DeserializeObject<TosResponse>(response);
+-        return tosResponse.tosHash;
+-    }
+-
+     private class TosResponse
+     {
+         [JsonProperty("message")]
