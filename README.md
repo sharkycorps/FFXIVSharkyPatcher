@@ -18,6 +18,10 @@ Not using the Github Releases for transparency.
 從 [自動構建](https://nightly.link/sharkycorps/FFXIVSharkyPatcher/workflows/apply-patches-and-build/main/patched-artifact) 中下載 zip 文件，並覆蓋 XIVLauncherCN 或者 Dalamud.Updater 安裝資料夾中的內容。
 為了透明起見，暫時不用 Github Releases。
 
+## Community 🦈 社区
+
+Discord：https://discord.gg/6XQbvNgn
+
 ## Safety 🦈 安全性
 ### Diffs between goatcorp and ottercorp
 
