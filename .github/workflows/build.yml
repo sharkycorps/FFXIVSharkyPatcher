@@ -1,0 +1,25 @@
+name: Build Patcher
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    name: Build on Windows
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build SharkyPatcher
+        run: |
+          dotnet restore
+          dotnet publish -c Release
+          Compress-Archive -Path .\SharkyPatcher\bin\Release\net462\publish\* -Destination SharkyPatcher.zip
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SharkyPatcher
+          path: .\SharkyPatcher\bin\Release\net462\publish\
+      - name: Tag Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: SharkyPatcher.zip
+          body_path: RELEASE.md

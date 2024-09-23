@@ -1,0 +1,9 @@
+# build files
+bin
+obj
+
+# log files
+*.log
+
+# Fody - auto-generated XML schema
+FodyWeavers.xsd
