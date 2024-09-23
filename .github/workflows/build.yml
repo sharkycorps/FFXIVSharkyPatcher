@@ -25,4 +25,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: SharkyPatcher.zip
+          name: Sharky Patcher ${{ github.ref_name }}
           body_path: RELEASE.md
