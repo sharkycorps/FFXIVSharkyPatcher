@@ -3,10 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net462</TargetFramework>
-    <ImplicitUsings>disable</ImplicitUsings>
+    <Version>2.0.0.1</Version>
     <ApplicationIcon>SharkyIcon.ico</ApplicationIcon>
     <DebugType>None</DebugType>
     <DebugSymbols>False</DebugSymbols>
+    <ImplicitUsings>disable</ImplicitUsings>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
