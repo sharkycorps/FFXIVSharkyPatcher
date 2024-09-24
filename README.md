@@ -9,7 +9,7 @@
 
 Patches which remove unreasonable ToS, analytics, plugin bans and integrity check from Dalamud and XIVLauncher CN.
 
-鯊鯊補丁的目的是移除 Dalamud 和 XIVLauncher CN 中不合理的服務條款、分析、插件禁令和完整性檢查。
+鯊鯊補丁的目的是移除 Dalamud 和 XIVLauncher CN 中不合理的**服務條款**、**數據上傳**、**插件封鎖**和完整性檢查。
 
 ## Usage 🦈 使用
 
