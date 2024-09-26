@@ -3,7 +3,7 @@
 ## 使用方法
 
 1. 從下方 `Assets` 文件中下載 `SharkyPatcher.zip`
-2. 將其解壓到 `XIVLauncherCN` 或者 `Dalamud.Updater` 相同安裝目錄下
+2. 將其解壓到 `XIVLauncherCN` 或者 `Dalamud.Updater` 安裝目錄下，與啟動器/更新器主程序同級
 3. 雙擊運行 `SharkyPatcher.exe` 即可自動應用補丁，並啟動相應主程序
 
 ## 注意

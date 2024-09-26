@@ -101,7 +101,8 @@ namespace SharkyPatcher
         {
             Log.Information("==============================================================");
 
-            DalamudVersionInfo dalamudVersion = await GetDalamudVersionAsync();
+            bool isStaging = GetDalamudIsStaging(baseDir);
+            DalamudVersionInfo dalamudVersion = await GetDalamudVersionAsync(isStaging);
             string dalamudPath = Path.Combine(baseDir, @"addon\Hooks", dalamudVersion.AssemblyVersion);
             bool dalamudExists = CheckExists(Path.Combine(dalamudPath, dalamudName));
             if (dalamudExists)
@@ -118,15 +119,33 @@ namespace SharkyPatcher
             }
         }
         
-        static async Task<DalamudVersionInfo> GetDalamudVersionAsync()
+        static bool GetDalamudIsStaging(string baseDir) {
+            Log.Information("【鯊鯊補丁】獲取框架發行分支中……");
+
+            string dalamudConfigPath = Path.Combine(baseDir, "dalamudConfig.json");
+            JObject dalamudConfigObj = JObject.Parse(File.ReadAllText(dalamudConfigPath));
+            string dalamudBetaKey = dalamudConfigObj.GetValue("DalamudBetaKey").Value<string>();
+
+            LogF.Information($"【鯊鯊補丁】框架 Beta Key：{dalamudBetaKey}");
+
+            if (dalamudBetaKey != null) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        static async Task<DalamudVersionInfo> GetDalamudVersionAsync(bool isStaging)
         {
             Log.Information("【鯊鯊補丁】獲取框架版本中……");
 
+            string track = isStaging ? "staging" : "release";
             HttpClient client = new HttpClient { Timeout = TimeSpan.FromMinutes(1) };
             client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            string versionJson = await client.GetStringAsync("https://aonyx.ffxiv.wang/Dalamud/Release/VersionInfo?track=release").ConfigureAwait(false);
+            string versionJson = await client.GetStringAsync($"https://aonyx.ffxiv.wang/Dalamud/Release/VersionInfo?track={track}").ConfigureAwait(false);
             DalamudVersionInfo dalamudVersion = JsonConvert.DeserializeObject<DalamudVersionInfo>(versionJson);
             LogF.Information($"【鯊鯊補丁】框架版本：{versionJson}");
+            Log.Information($"【鯊鯊補丁】當前 Dalamud 發行分支：<{track}>");
             Log.Information($"【鯊鯊補丁】當前 Dalamud 版本：<{dalamudVersion.AssemblyVersion}>");
 
             return dalamudVersion;

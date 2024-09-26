@@ -20,7 +20,7 @@ Patches which remove unreasonable ToS, analytics, plugin bans and integrity chec
 ---
 
 1. 從 [Github Releases](https://github.com/sharkycorps/FFXIVSharkyPatcher/releases) 中下載最新的 `SharkyPatcher.zip`
-2. 將其解壓到 `XIVLauncherCN` 或者 `Dalamud.Updater` 相同安裝目錄下
+2. 將其解壓到 `XIVLauncherCN` 或者 `Dalamud.Updater` 安裝目錄下，與啟動器/更新器主程序同級
 3. 雙擊運行 `SharkyPatcher.exe` 即可自動應用補丁，並啟動相應主程序
 
 ## Community 🦈 社区
