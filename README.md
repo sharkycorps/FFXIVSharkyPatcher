@@ -25,7 +25,7 @@ Patches which remove unreasonable ToS, analytics, plugin bans and integrity chec
 
 ## Community 🦈 社区
 
-Discord：https://discord.gg/6XQbvNgn
+Discord：https://discord.gg/ZCX9rb9xUX
 
 ## Safety 🦈 安全性
 ### Diffs between goatcorp and ottercorp
