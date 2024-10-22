@@ -20,9 +20,9 @@ namespace SharkyPatcher
         static readonly string _launcherCommonName = "XIVLauncher.Common.dll";
         static readonly string _updaterName = "Dalamud.Updater.exe";
         static readonly string _dalamudName = "Dalamud.dll";
-        static readonly string _launcherDalamudBaseDir = "Roaming";
-        static readonly string _updaterDalamudBaseDir = "XIVLauncher";
         static readonly string _currentDir = Directory.GetCurrentDirectory();
+        static readonly string _dalamudBaseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XIVLauncherCN");
+
         static async Task Main()
         {
             string processToStart = "";
@@ -48,7 +48,7 @@ namespace SharkyPatcher
                             Path.Combine(_currentDir, launcherVersion), _launcherCommonName);
                         launcherPatcher.Patch();
                         launcherPatcher.Dispose();
-                        await PatchDalamud(_launcherDalamudBaseDir, _dalamudName);
+                        await PatchDalamud(_dalamudBaseDir, _dalamudName);
                     }
                     else
                     {
@@ -65,7 +65,7 @@ namespace SharkyPatcher
                     DUpdaterPatcher updaterPatcher = new DUpdaterPatcher(_currentDir, _updaterName);
                     updaterPatcher.Patch();
                     updaterPatcher.Dispose();
-                    await PatchDalamud(_updaterDalamudBaseDir, _dalamudName);
+                    await PatchDalamud(_dalamudBaseDir, _dalamudName);
                 }
 
                 if (!string.IsNullOrEmpty(processToStart))
@@ -108,7 +108,7 @@ namespace SharkyPatcher
             if (dalamudExists)
             {
                 BackupFile(Path.Combine(dalamudPath, dalamudName));
-                DalamudPatcher patcher = new DalamudPatcher(Path.Combine(_currentDir, baseDir), dalamudVersion);
+                DalamudPatcher patcher = new DalamudPatcher(baseDir, dalamudVersion);
                 patcher.Patch();
                 patcher.Dispose();
             }
@@ -192,7 +192,7 @@ namespace SharkyPatcher
 
         static bool CheckExists(string fileName)
         {
-            string filePath = Path.Combine(_currentDir, fileName);
+            string filePath = fileName;
             bool fileExists = File.Exists(filePath);
             if (!fileExists)
             {
@@ -203,7 +203,7 @@ namespace SharkyPatcher
         }
 
         static void BackupFile(string fileName) {
-            string filePath = Path.Combine(_currentDir, fileName);
+            string filePath = fileName;
 
             try
             {
