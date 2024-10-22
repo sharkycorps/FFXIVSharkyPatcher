@@ -1,4 +1,7 @@
-![支援版本](https://img.shields.io/badge/%E6%94%AF%E6%8F%B4%E7%89%88%E6%9C%AC-%E5%9C%8B%E6%9C%8D7.0-gold)
+![支援版本](https://img.shields.io/badge/%E6%94%AF%E6%8F%B4%E7%89%88%E6%9C%AC-%E5%9C%8B%E6%9C%8D7.01-gold)
+
+## 更新内容
+1. 修復衛月目錄調整的問題，因每個人當前啟動器版本可能不同，請僅在出現對應問題後再更新到此版本。
 
 ## 使用方法
 
