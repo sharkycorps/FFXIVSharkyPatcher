@@ -155,17 +155,18 @@ namespace SharkyPatcher
         {
             Log.Information("【鯊鯊補丁】獲取啟動器版本中……");
 
-            HttpClient client = new HttpClient { Timeout = TimeSpan.FromMinutes(1) };
-            client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            string versionJson = await client.GetStringAsync("https://aonyx.ffxiv.wang/Launcher/GetLease").ConfigureAwait(false);
-            JObject launcherVersion = JObject.Parse(versionJson);
-            string releasesList = launcherVersion.GetValue("releasesList").Value<string>();
-            string latestRelease = releasesList.Split('\n').Last();
-            string nupkgVersion = latestRelease.Split().ElementAt(1);
-            string appVersion = nupkgVersion.Replace("XIVLauncherCN", "app")
-                .Replace("-full.nupkg", "")
-                .Replace("-delta.nupkg", "");
-            LogF.Information($"【鯊鯊補丁】啟動器版本：{releasesList}");
+            // HttpClient client = new HttpClient { Timeout = TimeSpan.FromMinutes(1) };
+            // client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
+            // string versionJson = await client.GetStringAsync("https://aonyx.ffxiv.wang/Launcher/GetLease").ConfigureAwait(false);
+            // JObject launcherVersion = JObject.Parse(versionJson);
+            // string releasesList = launcherVersion.GetValue("releasesList").Value<string>();
+            // string latestRelease = releasesList.Split('\n').Last();
+            // string nupkgVersion = latestRelease.Split().ElementAt(1);
+            // string appVersion = nupkgVersion.Replace("XIVLauncherCN", "app")
+            //     .Replace("-full.nupkg", "")
+            //     .Replace("-delta.nupkg", "");
+            // LogF.Information($"【鯊鯊補丁】啟動器版本：{releasesList}");
+            string appVersion = "current";
             Log.Information($"【鯊鯊補丁】當前啟動器版本：<{appVersion}>");
 
             return appVersion;
